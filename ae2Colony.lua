@@ -6,7 +6,7 @@ local apVersions = {
 }
 local requiredAP = advancedperipherals and advancedperipherals.getAPVersion()
 if not apVersions[requiredAP] then
-  error("Incompatible Advanced Peripherals version: " .. tostring(requiredAP))
+  --error("Incompatible Advanced Peripherals version: " .. tostring(requiredAP))
 end
 
 --[[-------------------------------------------------------------------------------------------------------------------
@@ -222,12 +222,6 @@ local function updateMonitorGrouped(monitor)
   end
 end
 
-local function logAndDisplay(msg)
-  logLine(msg)
-  table.insert(monitorLines, msg)
-  sendChatMessage(msg)
-end
-
 -- [AP PERIPHERAL SETUP] ----------------------------------------------------------------------------------------------
 local function setupPeripherals()
   term.clear()
@@ -296,6 +290,13 @@ local function sendChatMessage(msg)
   if not ok then
     logLine("[ERROR] Chat Box failed: " .. tostring(err))
   end
+end
+
+-- [LOG AND DISPLAY] --------------------------------------------------------------------------------------------------
+local function logAndDisplay(msg)
+  logLine(msg)
+  table.insert(monitorLines, msg)
+  sendChatMessage(msg)
 end
 
 -- [UTILS] ------------------------------------------------------------------------------------------------------------
