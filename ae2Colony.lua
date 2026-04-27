@@ -39,6 +39,15 @@ local maxLogs = 10
 local maxLogSize = 200*1024 -- 100 KB
 local alarm = nil                   -- Used to update monitor for errors.
 
+-- [CHAT BOX] ---------------------------------------------------------------------------------------------------------
+local doChat = true
+local chatPrefix = "AE2 Colony"
+local chatBrackets = "[]"
+local chatBracketColor = "&6"
+local chatRange = nil -- nil = global/default, or number like 64
+local chatCooldown = 1.1
+local chatOnlyImportant = true -- true = only ERROR/MISSING/MANUAL/CRAFT
+
 -- [BLACKLIST & WHITELIST LOOKUPS] --------------------------------------------------------------------------------------------------------
 -- blacklistedTags: all items matching the given tags are skipped, they do not export.
 local blacklistedTags = {
@@ -216,6 +225,7 @@ end
 local function logAndDisplay(msg)
   logLine(msg)
   table.insert(monitorLines, msg)
+  sendChatMessage(msg)
 end
 
 -- [AP PERIPHERAL SETUP] ----------------------------------------------------------------------------------------------
@@ -234,6 +244,58 @@ local function confirmConnection(bridge)
     return true
   end
   return false
+end
+
+local chatBox = nil
+local lastChatMessage = 0
+
+local function setupChatBox()
+  if not doChat then return nil end
+
+  local box = peripheral.find("chatBox")
+  if not box then
+    print("[INFO] Chat Box not found, chat messages disabled")
+    return nil
+  end
+
+  return box
+end
+
+local function shouldSendToChat(msg)
+  if not doChat then return false end
+  if not chatOnlyImportant then return true end
+
+  return msg:find("%[ERROR%]")
+      or msg:find("%[MISSING%]")
+      or msg:find("%[MANUAL%]")
+      or msg:find("%[CRAFT%]")
+end
+
+local function sendChatMessage(msg)
+  if not chatBox then return end
+  if not shouldSendToChat(msg) then return end
+
+  local now = os.clock()
+  local delta = now - lastChatMessage
+  if delta < chatCooldown then
+    os.sleep(chatCooldown - delta)
+  end
+
+  local ok, err = pcall(function()
+    return chatBox.sendMessage(
+      msg,
+      chatPrefix,
+      chatBrackets,
+      chatBracketColor,
+      chatRange
+    )
+  end)
+
+  lastChatMessage = os.clock()
+
+  if not ok then
+    logLine("[ERROR] Chat Box failed: " .. tostring(err))
+  end
 end
 
 -- [UTILS] ------------------------------------------------------------------------------------------------------------
@@ -569,6 +631,7 @@ end
 -- [MAIN LOOP] --------------------------------------------------------------------------------------------------------
 cleanupOldLogs()
 local bridge, colony, monitor = setupPeripherals()
+chatBox = setupChatBox()
 local title = string.format("[INFO] %s v%s initialized", scriptName, scriptVersion)
 print(title)
 logLine(title)
